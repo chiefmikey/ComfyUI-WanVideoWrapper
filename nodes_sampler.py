@@ -144,6 +144,16 @@ class WanVideoSampler:
         if model["auto_cpu_offload"] is False:
             transformer = compile_model(transformer, model["compile_args"])
 
+        # Cache valid forward() params for torch.compile safety filtering.
+        # When compile_transformer_blocks_only=False, the compiled model is strict
+        # about kwargs — any key not in forward()'s signature raises TypeError.
+        _forward_ref = getattr(transformer, '_orig_mod', transformer).forward
+        _valid_forward_params = set(inspect.signature(_forward_ref).parameters.keys()) - {'self'}
+
+        def _filter_base_params(params):
+            """Filter base_params to only keys accepted by transformer.forward()."""
+            return {k: v for k, v in params.items() if k in _valid_forward_params}
+
         multitalk_sampling = image_embeds.get("multitalk_sampling", False)
 
         if multitalk_sampling and context_options is not None:
@@ -903,7 +913,7 @@ class WanVideoSampler:
 
         # Skip layer guidance (SLG)
         if slg_args is not None:
-            assert batched_cfg is not None, "Batched cfg is not supported with SLG"
+            assert not batched_cfg, "Batched cfg is not supported with SLG"
             transformer.slg_blocks = slg_args["blocks"]
             transformer.slg_start_percent = slg_args["start_percent"]
             transformer.slg_end_percent = slg_args["end_percent"]
@@ -1648,15 +1658,16 @@ class WanVideoSampler:
 
                     #batched
                     else:
-                        base_params['z'] = [z] * 2
+                        base_params['x'] = [z] * 2
                         base_params['y'] = [image_cond_input] * 2 if image_cond_input is not None else None
                         base_params['clip_fea'] = torch.cat([clip_fea, clip_fea], dim=0)
                         base_params.pop('is_uncond', None)  # Remove to avoid duplicate kwarg
                         cache_state_uncond = None
+                        filtered = _filter_base_params(base_params)
                         [noise_pred_cond, noise_pred_uncond_text], _, cache_state_cond = transformer(
                             context=positive_embeds + negative_embeds, is_uncond=False,
                             pred_id=cache_state[0] if cache_state else None,
-                            **base_params
+                            **filtered
                         )
                 except Exception as e:
                     log.error(f"Error during model prediction: {e}")
