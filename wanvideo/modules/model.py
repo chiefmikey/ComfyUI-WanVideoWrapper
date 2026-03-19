@@ -1171,7 +1171,7 @@ class WanAttentionBlock(nn.Module):
 
         if self.attention_mode == "sageattn_3" and attention_mode_override is None:
             if current_step != 0 and not last_step:
-                attention_mode_override = "sageattn"
+                attention_mode_override = "sdpa"  # SA2 incompatible with Blackwell SM 120
 
         #self-attention
         split_attn = (context is not None

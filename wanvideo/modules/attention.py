@@ -71,7 +71,9 @@ except:
 # sage3
 try:
     from sageattn3 import sageattn3_blackwell as sageattn_blackwell
-except:
+    print(f"[WanVideo] SageAttention 3 loaded: {sageattn_blackwell}")
+except Exception as _sa3_err:
+    print(f"[WanVideo] SA3 import failed: {type(_sa3_err).__name__}: {_sa3_err}")
     try:
         from sageattn import sageattn_blackwell
     except:

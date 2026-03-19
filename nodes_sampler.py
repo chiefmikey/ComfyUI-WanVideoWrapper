@@ -713,7 +713,7 @@ class WanVideoSampler:
             vae = s2v_audio_embeds.get("vae", None)
 
         # vid2vid
-        noise_mask=original_image=None
+        noise_mask=original_image=input_samples=None
         if samples is not None and not multitalk_sampling and not wananimate_loop:
             saved_generator_state = samples.get("generator_state", None)
             if saved_generator_state is not None:
@@ -1651,6 +1651,7 @@ class WanVideoSampler:
                         base_params['z'] = [z] * 2
                         base_params['y'] = [image_cond_input] * 2 if image_cond_input is not None else None
                         base_params['clip_fea'] = torch.cat([clip_fea, clip_fea], dim=0)
+                        base_params.pop('is_uncond', None)  # Remove to avoid duplicate kwarg
                         cache_state_uncond = None
                         [noise_pred_cond, noise_pred_uncond_text], _, cache_state_cond = transformer(
                             context=positive_embeds + negative_embeds, is_uncond=False,

@@ -1121,11 +1121,11 @@ class WanVideoModelLoader:
         mm.cleanup_models()
         mm.soft_empty_cache()
 
-        if "sage" in attention_mode:
+        if attention_mode == "sageattn":
             try:
                 from sageattention import sageattn
             except Exception as e:
-                raise ValueError(f"Can't import SageAttention: {str(e)}")
+                print(f"[WanVideo] SageAttention not available: {e}, falling back to sdpa"); attention_mode = "sdpa"
 
         gguf = False
         if model.endswith(".gguf"):
