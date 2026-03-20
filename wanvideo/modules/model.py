@@ -1170,8 +1170,9 @@ class WanAttentionBlock(nn.Module):
             feta_scores = get_feta_scores(q, k)
 
         if self.attention_mode == "sageattn_3" and attention_mode_override is None:
-            if current_step != 0 and not last_step:
-                attention_mode_override = "sdpa"  # SA2 incompatible with Blackwell SM 120
+            if not getattr(self, 'sageattn3_all_steps', False):
+                if current_step != 0 and not last_step:
+                    attention_mode_override = "sdpa"  # SA2 incompatible with Blackwell SM 120
 
         #self-attention
         split_attn = (context is not None

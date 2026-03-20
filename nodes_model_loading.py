@@ -1097,6 +1097,7 @@ class WanVideoModelLoader:
                 "multitalk_model": ("MULTITALKMODEL", {"default": None, "tooltip": "Multitalk model"}),
                 "fantasyportrait_model": ("FANTASYPORTRAITMODEL", {"default": None, "tooltip": "FantasyPortrait model"}),
                 "rms_norm_function": (["default", "pytorch"], {"default": "default", "tooltip": "RMSNorm function to use, 'pytorch' is the new native torch RMSNorm, which is faster (when not using torch.compile mostly) but changes results slightly. 'default' is the original WanRMSNorm"}),
+                "sageattn3_all_steps": ("BOOLEAN", {"default": False, "tooltip": "Use SageAttention 3 on ALL steps instead of only first/last. Requires sageattn_3 attention mode. Much faster (~3x attention speed) but may increase VRAM usage. Test with your setup before enabling in production."}),
             }
         }
 
@@ -1107,7 +1108,7 @@ class WanVideoModelLoader:
 
     def loadmodel(self, model, base_precision, load_device,  quantization,
                   compile_args=None, attention_mode="sdpa", block_swap_args=None, lora=None, vram_management_args=None, extra_model=None, vace_model=None,
-                  fantasytalking_model=None, multitalk_model=None, fantasyportrait_model=None, rms_norm_function="default"):
+                  fantasytalking_model=None, multitalk_model=None, fantasyportrait_model=None, rms_norm_function="default", sageattn3_all_steps=False):
         assert not (vram_management_args is not None and block_swap_args is not None), "Can't use both block_swap_args and vram_management_args at the same time"
         if vace_model is not None:
             extra_model = vace_model
@@ -1436,6 +1437,9 @@ class WanVideoModelLoader:
 
         with init_empty_weights():
             transformer = WanModel(**TRANSFORMER_CONFIG).eval()
+            if sageattn3_all_steps:
+                for block in transformer.blocks:
+                    block.sageattn3_all_steps = True
 
         if extra_audio_model:
             log.info("Ovi extra audio model detected, initializing...")
