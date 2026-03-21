@@ -616,6 +616,13 @@ def dict_to_device(tensor_dict, device, dtype=None):
 def compile_model(transformer, compile_args=None):
     if compile_args is None:
         return transformer
+
+    # Disable CUDA graph trees when cudaMallocAsync is active (ComfyUI's --disable-smart-memory).
+    # cudaMallocAsync doesn't support checkPoolLiveAllocations, which CUDA graph trees require.
+    if hasattr(torch, '_inductor') and hasattr(torch._inductor, 'config'):
+        torch._inductor.config.triton.cudagraph_trees = False
+        log.info("Disabled CUDA graph trees for torch.compile (cudaMallocAsync compatibility)")
+
     if hasattr(torch, '_dynamo') and hasattr(torch._dynamo, 'config'):
         torch._dynamo.config.cache_size_limit = compile_args["dynamo_cache_size_limit"]
         torch._dynamo.config.force_parameter_static_shapes = compile_args["force_parameter_static_shapes"]
