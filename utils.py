@@ -617,11 +617,13 @@ def compile_model(transformer, compile_args=None):
     if compile_args is None:
         return transformer
 
-    # Disable CUDA graph trees when cudaMallocAsync is active (ComfyUI's --disable-smart-memory).
-    # cudaMallocAsync doesn't support checkPoolLiveAllocations, which CUDA graph trees require.
+    # Disable CUDA graphs when cudaMallocAsync is active (ComfyUI's --disable-smart-memory).
+    # cudaMallocAsync doesn't support checkPoolLiveAllocations, and the cudagraphify path
+    # in inductor's compile_fx triggers CUDA driver errors on capture/replay.
     if hasattr(torch, '_inductor') and hasattr(torch._inductor, 'config'):
+        torch._inductor.config.triton.cudagraphs = False
         torch._inductor.config.triton.cudagraph_trees = False
-        log.info("Disabled CUDA graph trees for torch.compile (cudaMallocAsync compatibility)")
+        log.info("Disabled CUDA graphs for torch.compile (cudaMallocAsync compatibility)")
 
     if hasattr(torch, '_dynamo') and hasattr(torch._dynamo, 'config'):
         torch._dynamo.config.cache_size_limit = compile_args["dynamo_cache_size_limit"]
