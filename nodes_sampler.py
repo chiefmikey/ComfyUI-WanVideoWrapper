@@ -1702,6 +1702,7 @@ class WanVideoSampler:
                     noise_pred = noise_pred_uncond_text + cfg_scale * (noise_pred_cond - noise_pred_uncond_text)
                 del noise_pred_uncond_text, noise_pred_cond
 
+                noise_pred_ovi = None
                 if latent_model_input_ovi is not None:
                     if ovi_audio_cfg is None:
                         audio_cfg_scale = cfg_scale - 1.0 if cfg_scale > 4.0 else cfg_scale
