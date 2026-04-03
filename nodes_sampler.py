@@ -660,7 +660,7 @@ class WanVideoSampler:
                         list_idx = list_idx[torch.randperm(delta, generator=seed_g)]
                         noise[:, place_idx:place_idx + delta, :, :] = noise[:, list_idx, :, :]
 
-                log.info(f"Context schedule enabled: {context_schedule} - {context_frames} frames, {context_stride} stride, {context_overlap} overlap")
+                log.info(f"Context schedule enabled: {context_frames} frames, {context_stride} stride, {context_overlap} overlap")
                 from .context_windows.context import get_context_scheduler, create_window_mask, WindowTracker
                 self.window_tracker = WindowTracker(verbose=context_options["verbose"])
                 context = get_context_scheduler(context_schedule)
@@ -1867,7 +1867,6 @@ class WanVideoSampler:
                         counter = torch.zeros_like(latent_model_input, device=device)
                         noise_pred = torch.zeros_like(latent_model_input, device=device)
                         context_queue = list(context(idx, steps, latent_video_length, context_frames, context_stride, context_overlap))
-                        log.info(f"Step {idx}: {len(context_queue)} context windows")
                         fraction_per_context = 1.0 / len(context_queue)
                         context_pbar = ProgressBar(steps)
                         step_start_progress = idx
